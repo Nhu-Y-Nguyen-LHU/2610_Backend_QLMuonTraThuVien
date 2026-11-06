@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Library API Control Center</title>
+  <style>
+    :root{--primary:#284f9e;--primary-dark:#1d3d7d;--accent:#ecc354;--bg:#f4f7fc;--danger:#b42318;--ok:#16794b;--muted:#667085}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);font:14px "Segoe UI",Arial;color:#17233c}
+    header{background:var(--primary);color:#fff;padding:18px max(20px,calc((100% - 1240px)/2));display:flex;align-items:center;justify-content:space-between}
+    header strong{font-size:20px}header small{display:block;color:#dbe7ff;margin-top:3px}.identity{display:flex;align-items:center;gap:12px}
+    main{max-width:1240px;margin:20px auto;padding:0 18px}.notice{display:none;border-left:5px solid var(--accent);background:#fff8df;padding:12px 14px;margin-bottom:16px;border-radius:4px}
+    .layout{display:grid;grid-template-columns:215px 1fr;gap:28px}.nav,.card{background:transparent;border:0;border-radius:0;box-shadow:none}
+    .nav{padding:4px 0;height:max-content;position:sticky;top:15px}.nav button{background:transparent;color:var(--primary);text-align:left;margin:2px 0;padding:9px 10px}.nav button.active{background:#e8efff}
+    .page{display:none}.page.active{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}    .card{padding:0 0 22px;margin-bottom:22px;border-bottom:1px solid #dfe6f2}.card:last-child{border-bottom:0}
+    h1{font-size:24px;margin:0 0 16px;color:var(--primary)}h2{font-size:17px;margin:0 0 14px;color:var(--primary)}h3{font-size:15px;color:var(--primary);margin:18px 0 8px}
+    input,select,button,textarea{width:100%;padding:9px 10px;margin:4px 0;border-radius:6px;border:1px solid #c8d3e6;font:inherit}textarea{min-height:80px;resize:vertical}
+    button{background:var(--primary);color:#fff;border:0;cursor:pointer;font-weight:600}button:hover{background:var(--primary-dark);color:#fff}button.secondary{background:#e8efff;color:var(--primary)}button.secondary:hover{background:var(--accent);color:#352b0c}button.warning{background:var(--accent);color:#352b0c}button.warning:hover{background:#d6aa35;color:#352b0c}button.danger{background:var(--danger)}button.danger:hover{background:#8f1d14;color:#fff}
+    .nav button:hover,.nav button.active{background:var(--accent);color:#352b0c}.nav button.active{font-weight:700}
+    .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.actions input,.actions select{flex:1 1 150px;min-width:0}.actions button{width:auto;min-width:120px;white-space:nowrap;flex:0 0 auto}.muted{color:var(--muted)}.hidden{display:none!important}
+    .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:560px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e8edf5;vertical-align:top}th{background:#f1f5fb;color:var(--primary)}
+    .badge{display:inline-block;border-radius:15px;padding:3px 8px;background:#e8efff;color:var(--primary);font-size:12px}.badge.ok{background:#e3f6eb;color:var(--ok)}.badge.bad{background:#ffebe8;color:var(--danger)}
+    pre{background:#111827;color:#d1fae5;padding:12px;border-radius:6px;max-height:300px;overflow:auto;white-space:pre-wrap}.metric{font-size:26px;font-weight:700;color:var(--primary)}
+    @media(max-width:800px){.layout{grid-template-columns:1fr}.nav{position:static;display:flex;overflow:auto;gap:5px}.nav button{min-width:max-content;width:auto}.grid{grid-template-columns:minmax(0,1fr)}.card{min-width:0}}
+  </style>
+</head>
+<body>
+<header><div><strong>Library API Control Center</strong><small>Giao diện kiểm thử toàn bộ yêu cầu đề tài</small></div><div class="identity"><span id="session">Chưa đăng nhập</span><button id="logout" class="secondary hidden" onclick="logout()">Đăng xuất</button></div></header>
+<main>
+  <div id="notice" class="notice"></div>
+  <div class="layout">
+    <aside class="nav">
+      <button onclick="showPage('auth',this)" class="active">Xác thực & RBAC</button>
+      <button onclick="showPage('books',this)">Sách & bản sao</button>
+      <button onclick="showPage('borrow',this)">Mượn & trả</button>
+      <button onclick="showPage('users',this)">Độc giả</button>
+      <button onclick="showPage('tests',this)">Kiểm thử yêu cầu</button>
+      <button onclick="showPage('logs',this)">Request log</button>
+    </aside>
+    <section>
+      <div id="auth" class="page active">
+        <h1>Xác thực & phân quyền</h1>
+        <div class="grid">
+          <div class="card"><h2>Đăng nhập</h2><div class="actions"><input id="loginUsername" placeholder="Username"><input id="loginPassword" type="password" placeholder="Password"><button onclick="login()">Đăng nhập</button><button class="secondary" onclick="logout()">Xóa token</button></div></div>
+          <div class="card"><h2>Đăng ký Reader</h2><div class="actions"><input id="registerUsername" placeholder="Username"><input id="registerFullName" placeholder="Họ tên"><input id="registerPassword" type="password" placeholder="Mật khẩu tối thiểu 8 ký tự"><button onclick="register()">Đăng ký</button></div><p class="muted">Tài khoản mới mặc định có role Reader.</p></div>
+          <div class="card"><h2>Session hiện tại</h2><div id="claims" class="muted">Chưa có token.</div><p class="muted">JWT được lưu trong localStorage và tự động gắn vào request protected.</p></div>
+        </div>
+      </div>
+      <div id="books" class="page">
+        <h1>Quản lý sách & bản sao</h1>
+        <div class="card"><div class="actions"><input id="bookQuery" placeholder="Tìm theo tên, tác giả, ISBN"><button onclick="loadBooks()">Tra cứu</button></div><div id="bookTable"></div></div>
+        <div class="grid">
+          <div class="card"><h2>Thêm đầu sách</h2><div class="actions"><input id="bookTitle" placeholder="Tên sách"><input id="bookAuthor" placeholder="Tác giả"><input id="bookIsbn" placeholder="ISBN"><input id="bookCopies" type="number" min="0" placeholder="Tổng số bản"><button onclick="createBook()">Thêm sách</button></div></div>
+          <div class="card"><h2>Thêm bản sao vật lý</h2><div class="actions"><input id="copyTitleId" type="number" placeholder="BookTitleId"><input id="copyBarcode" placeholder="Barcode"><button onclick="createCopy()">Thêm bản sao</button></div></div>
+        </div>
+      </div>
+      <div id="borrow" class="page">
+        <h1>Quy trình mượn & trả</h1>
+        <div class="grid">
+          <div class="card"><h2>Lập phiếu mượn (Stored Procedure)</h2><div class="actions"><input id="borrowCopyIds" placeholder="ID bản sao, ví dụ: 1,2"><input id="borrowExpected" type="date"><button onclick="borrow()">Gọi SP mượn</button></div><p class="muted">Kiểm tra nợ phạt, giới hạn 5 sách, trạng thái Available và transaction.</p></div>
+          <div class="card"><h2>Tiếp nhận trả sách</h2><div class="actions"><input id="returnTicketId" type="number" placeholder="BorrowTicketId"><input id="returnDate" type="date"><button onclick="returnBook()">Trả sách</button></div><p class="muted">Quá hạn sẽ tạo FineRecord: 5.000đ/ngày.</p></div>
+        </div>
+        <div class="card"><div class="actions"><button onclick="loadTickets()">Tải phiếu mượn</button><button onclick="loadFines()">Tải tiền phạt</button><input id="payFineId" type="number" placeholder="FineRecordId"><button class="warning" onclick="payFine()">Xác nhận trả phạt</button></div><div id="borrowTable"></div></div>
+      </div>
+      <div id="users" class="page">
+        <h1>Quản lý độc giả</h1>
+        <div class="card"><button onclick="loadUsers()">GET /api/users</button><div id="userTable"></div></div>
+        <div class="card"><h2>Tạo người dùng / role (Admin)</h2><div class="actions"><input id="userUsername" placeholder="Username"><input id="userPassword" type="password" placeholder="Password"><input id="userFullName" placeholder="Họ tên"><select id="userRole"><option>Reader</option><option>Librarian</option><option>Admin</option></select><button onclick="createUser()">Tạo người dùng</button></div></div>
+      </div>
+      <div id="tests" class="page">
+        <h1>Kiểm thử yêu cầu</h1>
+        <div class="card"><h2>Kiểm thử tự động bằng giao diện</h2><p class="muted">Các nút dưới đây gọi API thật và hiển thị status/body. Hãy đăng nhập trước.</p><div class="grid">
+          <button onclick="test('Không token → 401',()=>api('/api/users',{auth:false}))">RBAC: không token</button>
+          <button onclick="test('Reader → /api/users phải 403',()=>api('/api/users'))">RBAC: Reader gọi Admin API</button>
+          <button onclick="test('Validation danh sách rỗng → 400',()=>api('/api/borrow',{method:'POST',body:{bookCopyIds:[],expectedReturnDate:'2000-01-01T00:00:00Z'}}))">Validation mượn sai</button>
+          <button onclick="test('Không tồn tại → 404',()=>api('/api/books/999999'))">404 resource</button>
+          <button onclick="test('Tra cứu public → 200',()=>api('/api/books'))">Public books API</button>
+        </div></div>
+        <div class="card"><h2>Checklist</h2><ul><li>Controllers → Services → DbContext và DI</li><li>6 entities: User, BookTitle, BookCopy, BorrowTicket, BorrowDetail, FineRecord</li><li>JWT Bearer + Admin/Librarian/Reader</li><li>FluentValidation + Global Exception + Serilog</li><li>Stored Procedure transaction: commit/rollback nhiều bảng</li><li>CRUD sách, bản sao, người dùng; mượn/trả và phạt</li></ul></div>
+      </div>
+      <div id="logs" class="page"><h1>Request log</h1><div class="card"><div class="actions"><button onclick="renderLogs()">Làm mới</button><button class="danger" onclick="clearLogs()">Xóa log trình duyệt</button></div><pre id="requestLog">Chưa có request.</pre></div></div>
+    </section>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id), token=()=>localStorage.getItem('jwt'), logs=JSON.parse(localStorage.getItem('apiLogs')||'[]');
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function notice(message,ok=true){const e=$('notice');e.textContent=message;e.style.display='block';e.style.borderColor=ok?'var(--accent)':'#c62828'}
+function showPage(id,button){document.querySelectorAll('.page').forEach(e=>e.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.nav button').forEach(e=>e.classList.remove('active'));button.classList.add('active')}
+function saveLog(method,url,status,body){logs.unshift({time:new Date().toLocaleTimeString(),method,url,status,body});logs.splice(80);localStorage.setItem('apiLogs',JSON.stringify(logs));renderLogs()}
+function renderLogs(){$('requestLog').textContent=logs.length?logs.map(x=>`[${x.time}] ${x.method} ${x.status} ${x.url}\n${JSON.stringify(x.body,null,2)}`).join('\n\n'):'Chưa có request.'}
+function clearLogs(){logs.splice(0);localStorage.setItem('apiLogs','[]');renderLogs()}
+async function api(url,options={}){const headers={'Content-Type':'application/json',...(options.headers||{})};if(options.auth!==false&&token())headers.Authorization='Bearer '+token();const method=options.method||'GET';const response=await fetch(url,{...options,method,headers,body:options.body===undefined?undefined:JSON.stringify(options.body)});const text=await response.text();let body;try{body=text?JSON.parse(text):null}catch{body=text}saveLog(method,url,response.status,body);return {response,body}}
+async function action(work){try{const result=await work();if(!result.response.ok)throw Error(result.body?.detail||result.body?.error||`HTTP ${result.response.status}`);return result.body}catch(e){notice(e.message,false);throw e}}
+function getRequestError(error){return error instanceof TypeError&&error.message==='Failed to fetch'?'Không kết nối được API. Hãy chạy lại build-test-open.ps1 và kiểm tra http://localhost:5187.':error.message}
+async function login(){try{const x=await api('/api/auth/login',{method:'POST',auth:false,body:{username:$('loginUsername').value,password:$('loginPassword').value}});if(!x.response.ok)throw Error(x.body?.error||'Đăng nhập thất bại');localStorage.setItem('jwt',x.body.token);updateSession(x.body);notice('Đăng nhập thành công');}catch(e){notice(getRequestError(e),false)}}
+async function register(){try{const x=await api('/api/auth/register',{method:'POST',auth:false,body:{username:$('registerUsername').value,password:$('registerPassword').value,fullName:$('registerFullName').value}});if(!x.response.ok)throw Error(x.body?.detail||x.body?.error||'Đăng ký thất bại');localStorage.setItem('jwt',x.body.token);updateSession(x.body);notice('Đăng ký thành công với role Reader');}catch(e){notice(getRequestError(e),false)}}
+function updateSession(data){$('session').textContent=`${data.fullName} · ${data.role}`;$('claims').innerHTML=`<b>UserId:</b> ${esc(data.userId)}<br><b>Username:</b> ${esc(data.username)}<br><b>Role:</b> <span class="badge">${esc(data.role)}</span>`;$('logout').classList.remove('hidden')}
+function logout(){localStorage.removeItem('jwt');$('session').textContent='Chưa đăng nhập';$('claims').textContent='Chưa có token.';$('logout').classList.add('hidden');notice('Đã xóa JWT')}
+async function loadBooks(){try{const data=await action(()=>api('/api/books?q='+encodeURIComponent($('bookQuery').value),{auth:false}));$('bookTable').innerHTML='<div class="table-wrap"><table><tr><th>ID</th><th>Đầu sách</th><th>ISBN</th><th>Bản sao / trạng thái</th></tr>'+data.map(b=>`<tr><td>${b.id}</td><td><b>${esc(b.title)}</b><br>${esc(b.author)}</td><td>${esc(b.isbn)}</td><td>${b.copies.map(c=>`#${c.id} ${esc(c.barcode)} <span class="badge ${c.status==='Available'?'ok':c.status==='Lost'?'bad':''}">${c.status}</span>`).join('<br>')||'Chưa có bản sao'}</td></tr>`).join('')+'</table></div>'}catch{}}
+async function createBook(){try{const b=await action(()=>api('/api/books',{method:'POST',body:{title:$('bookTitle').value,author:$('bookAuthor').value,isbn:$('bookIsbn').value,totalCopies:Number($('bookCopies').value)}}));notice(`Đã tạo đầu sách #${b.id||'mới'}`);loadBooks()}catch{}}
+async function createCopy(){try{const b=await action(()=>api('/api/books/copies',{method:'POST',body:{bookTitleId:Number($('copyTitleId').value),barcode:$('copyBarcode').value}}));notice(`Đã tạo bản sao #${b.id}`);loadBooks()}catch{}}
+async function borrow(){try{const ids=$('borrowCopyIds').value.split(',').map(Number).filter(Boolean);const b=await action(()=>api('/api/borrow',{method:'POST',body:{bookCopyIds:ids,expectedReturnDate:new Date($('borrowExpected').value).toISOString()}}));notice(`Mượn thành công, ticket #${b.borrowTicketId}`);loadTickets()}catch{}}
+async function returnBook(){try{await action(()=>api(`/api/borrow/${Number($('returnTicketId').value)}/return`,{method:'POST',body:{returnDate:new Date($('returnDate').value).toISOString()}}));notice('Đã tiếp nhận trả sách và tính phạt nếu quá hạn');loadTickets();loadFines()}catch{}}
+async function payFine(){try{await action(()=>api(`/api/borrow/fines/${Number($('payFineId').value)}/pay`,{method:'POST'}));notice('Đã xác nhận thanh toán tiền phạt');loadFines()}catch{}}
+async function loadTickets(){try{const data=await action(()=>api('/api/borrow/tickets'));$('borrowTable').innerHTML='<h3>BorrowTicket / BorrowDetail</h3><div class="table-wrap"><table><tr><th>Ticket</th><th>User</th><th>Ngày mượn</th><th>Hạn trả</th><th>Status</th><th>Bản sao</th></tr>'+data.map(t=>`<tr><td>#${t.id}</td><td>${esc(t.user?.fullName||t.userId)}</td><td>${new Date(t.borrowDate).toLocaleString()}</td><td>${new Date(t.expectedReturnDate).toLocaleDateString()}</td><td><span class="badge">${t.status}</span></td><td>${t.details.map(d=>`#${d.bookCopyId} ${esc(d.bookCopy?.barcode||'')}`).join('<br>')}</td></tr>`).join('')+'</table></div>'}catch{}}
+async function loadFines(){try{const data=await action(()=>api('/api/borrow/fines'));$('borrowTable').innerHTML+='<h3>FineRecord</h3><div class="table-wrap"><table><tr><th>ID</th><th>Ticket</th><th>Người dùng</th><th>Số tiền</th><th>Lý do</th><th>Đã trả?</th></tr>'+data.map(f=>`<tr><td>#${f.id}</td><td>#${f.borrowTicketId}</td><td>${esc(f.user?.fullName||f.userId)}</td><td>${Number(f.fineAmount).toLocaleString()} đ</td><td>${esc(f.reason)}</td><td>${f.isPaid?'Có':'<span class="badge bad">Chưa trả</span>'}</td></tr>`).join('')+'</table></div>'}catch{}}
+async function loadUsers(){try{const data=await action(()=>api('/api/users'));$('userTable').innerHTML='<div class="table-wrap"><table><tr><th>ID</th><th>Username</th><th>Họ tên</th><th>Role</th><th>Status</th><th>Thao tác</th></tr>'+data.map(u=>`<tr><td>${u.id}</td><td>${esc(u.username)}</td><td>${esc(u.fullName)}</td><td><span class="badge">${esc(u.role)}</span></td><td>${esc(u.status)}</td><td><button class="danger" onclick="disableUser(${u.id})">Vô hiệu hóa</button></td></tr>`).join('')+'</table></div>'}catch{}}
+async function createUser(){try{const b=await action(()=>api('/api/users',{method:'POST',body:{username:$('userUsername').value,password:$('userPassword').value,fullName:$('userFullName').value,role:$('userRole').value}}));notice(`Đã tạo user #${b.id}`);loadUsers()}catch{}}
+async function disableUser(id){if(!confirm('Vô hiệu hóa user này?'))return;try{await action(()=>api('/api/users/'+id,{method:'DELETE'}));notice('Đã vô hiệu hóa user');loadUsers()}catch{}}
+async function test(label,work){try{const x=await work();notice(`${label}: HTTP ${x.response.status}`,x.response.ok)}catch(e){notice(`${label}: ${e.message}`,false)}}
+const defaultDate=new Date(Date.now()+14*86400000).toISOString().slice(0,10);$('borrowExpected').value=defaultDate;$('returnDate').value=new Date().toISOString().slice(0,10);renderLogs();loadBooks();
+</script>
+</body>
+</html>

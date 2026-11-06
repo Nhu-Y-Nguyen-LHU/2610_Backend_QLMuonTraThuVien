@@ -1,0 +1,23 @@
+# .NET build output
+**/bin/
+**/obj/
+publish/
+
+# Runtime logs and local data
+**/logs/
+*.log
+
+# Local development secrets and machine-specific settings
+appsettings.Local.json
+appsettings.Production.json
+.env
+
+# IDE and OS files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+Thumbs.db
+*.db
